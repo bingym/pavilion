@@ -11,7 +11,7 @@ not_found_handling = "single-page-application"
 [[d1_databases]]
 binding = "DB"
 database_name = "pavilion-db"
-database_id = "TBD"
+database_id = "df27a9e2-9071-4c4f-a060-05b223687f2f"
 migrations_dir = "migrations"
 
 [[r2_buckets]]
