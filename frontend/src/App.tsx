@@ -1,7 +1,9 @@
+import React, { Suspense } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import LoginPage from "./pages/LoginPage";
-import BooksPage from "./pages/BooksPage";
 import { TOKEN_KEY } from "./api/client";
+
+const LoginPage = React.lazy(() => import("./pages/LoginPage"));
+const BooksPage = React.lazy(() => import("./pages/BooksPage"));
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem(TOKEN_KEY);
@@ -11,18 +13,20 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/"
-          element={
-            <RequireAuth>
-              <BooksPage />
-            </RequireAuth>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<div />}>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="/"
+            element={
+              <RequireAuth>
+                <BooksPage />
+              </RequireAuth>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </BrowserRouter>
   );
 }

@@ -10,11 +10,9 @@ import {
   Space,
   Tag,
 } from "antd";
-import {
-  InboxOutlined,
-  CheckCircleOutlined,
-  LoadingOutlined,
-} from "@ant-design/icons";
+import InboxOutlined from "@ant-design/icons/es/icons/InboxOutlined";
+import CheckCircleOutlined from "@ant-design/icons/es/icons/CheckCircleOutlined";
+import LoadingOutlined from "@ant-design/icons/es/icons/LoadingOutlined";
 import type { UploadFile } from "antd";
 import {
   computeSha256,

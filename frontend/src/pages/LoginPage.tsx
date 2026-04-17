@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button, Card, Form, Input, Typography, message } from "antd";
-import { BookOutlined, LockOutlined, UserOutlined } from "@ant-design/icons";
+import BookOutlined from "@ant-design/icons/es/icons/BookOutlined";
+import LockOutlined from "@ant-design/icons/es/icons/LockOutlined";
+import UserOutlined from "@ant-design/icons/es/icons/UserOutlined";
 import { login, TOKEN_KEY } from "../api/client";
 
 const { Title } = Typography;

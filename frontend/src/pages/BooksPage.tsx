@@ -16,13 +16,11 @@ import {
   Card,
 } from "antd";
 import type { TablePaginationConfig } from "antd";
-import {
-  BookOutlined,
-  DeleteOutlined,
-  LogoutOutlined,
-  UploadOutlined,
-  ReloadOutlined,
-} from "@ant-design/icons";
+import BookOutlined from "@ant-design/icons/es/icons/BookOutlined";
+import DeleteOutlined from "@ant-design/icons/es/icons/DeleteOutlined";
+import LogoutOutlined from "@ant-design/icons/es/icons/LogoutOutlined";
+import UploadOutlined from "@ant-design/icons/es/icons/UploadOutlined";
+import ReloadOutlined from "@ant-design/icons/es/icons/ReloadOutlined";
 import type { Book } from "../api/client";
 import { getBooks, deleteBook, TOKEN_KEY } from "../api/client";
 import UploadModal from "../components/UploadModal";
