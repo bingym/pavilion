@@ -21,7 +21,17 @@ bucket_name = "pavilion-books"
 # 本地开发时设置变量，生产环境通过 wrangler secret put 设置
 [vars]
 ADMIN_USER = "admin"
+R2_BUCKET_NAME = "pavilion-books"
 
 # Secrets (生产环境通过 CLI 设置):
 # wrangler secret put ADMIN_PASSWORD
 # wrangler secret put JWT_SECRET
+# wrangler secret put R2_ACCOUNT_ID        # Cloudflare 账户 ID
+# wrangler secret put R2_ACCESS_KEY_ID     # R2 API Token 的 Access Key ID
+# wrangler secret put R2_SECRET_ACCESS_KEY # R2 API Token 的 Secret Access Key
+#
+# 获取 R2 API Token:
+# 1. 登录 Cloudflare Dashboard
+# 2. 进入 R2 -> Manage R2 API Tokens
+# 3. 创建 API Token，权限选择 "Object Read & Write"
+# 4. 记录 Access Key ID 和 Secret Access Key

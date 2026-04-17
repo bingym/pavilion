@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { AwsClient } from "aws4fetch";
 import { authMiddleware } from "../middleware/auth.ts";
 import { FileTypeExtMap, FileTypeLabel } from "../types.ts";
 import type { Env, FileTypeValue } from "../types.ts";
@@ -42,6 +43,7 @@ upload.post("/check", async (c) => {
 upload.get("/presign", async (c) => {
   const hash = c.req.query("hash");
   const filename = c.req.query("filename");
+  const contentType = c.req.query("contentType") ?? "application/octet-stream";
 
   if (!hash || !/^[0-9a-f]{64}$/i.test(hash)) {
     return c.json({ error: "Invalid hash" }, 400);
@@ -57,52 +59,37 @@ upload.get("/presign", async (c) => {
 
   const key = buildKey(hash, filename);
 
-  // Cloudflare R2 Workers Binding 不支持原生预签名 URL，
-  // 采用 Worker 代理上传方案：返回带签名 token 的上传端点
-  const uploadToken = await generateUploadToken(hash, key, c.env.JWT_SECRET);
+  // 使用 aws4fetch 生成 R2 S3 API 预签名 URL
+  // 浏览器可直接使用此 URL 上传文件，绕过 Worker 请求体大小限制
+  const r2Client = new AwsClient({
+    service: "s3",
+    region: "auto",
+    accessKeyId: c.env.R2_ACCESS_KEY_ID,
+    secretAccessKey: c.env.R2_SECRET_ACCESS_KEY,
+  });
+
+  const r2Url = `https://${c.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`;
+  const expiresInSeconds = 600; // 10 分钟有效期
+
+  const signedRequest = await r2Client.sign(
+    new Request(
+      `${r2Url}/${c.env.R2_BUCKET_NAME}/${key}?X-Amz-Expires=${expiresInSeconds}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": contentType,
+        },
+      }
+    ),
+    { aws: { signQuery: true } }
+  );
 
   return c.json({
     key,
-    uploadUrl: `/api/upload/proxy`,
-    uploadToken,
+    uploadUrl: signedRequest.url.toString(),
     method: "PUT",
+    contentType,
   });
-});
-
-/** PUT /api/upload/proxy — 代理接收文件并写入 R2 */
-upload.put("/proxy", async (c) => {
-  const token = c.req.header("X-Upload-Token");
-  const key = c.req.header("X-Upload-Key");
-
-  if (!token || !key) {
-    return c.json({ error: "Missing upload token or key" }, 400);
-  }
-
-  let tokenPayload: { hash: string; key: string; exp: number };
-  try {
-    tokenPayload = await verifyUploadToken(token, c.env.JWT_SECRET);
-  } catch {
-    return c.json({ error: "Invalid or expired upload token" }, 401);
-  }
-
-  if (tokenPayload.key !== key) {
-    return c.json({ error: "Key mismatch" }, 400);
-  }
-
-  const body = c.req.raw.body;
-  if (!body) {
-    return c.json({ error: "No file body" }, 400);
-  }
-
-  const contentType =
-    c.req.header("Content-Type") ?? "application/octet-stream";
-
-  await c.env.R2.put(key, body, {
-    httpMetadata: { contentType },
-    customMetadata: { sha256: tokenPayload.hash },
-  });
-
-  return c.json({ success: true });
 });
 
 /** POST /api/upload/complete — 验证 R2 文件并写入数据库 */
@@ -162,85 +149,5 @@ upload.post("/complete", async (c) => {
     },
   });
 });
-
-// ──────────────────────────────────────────────
-// 上传 Token 工具函数（HMAC-SHA256，10分钟有效）
-// ──────────────────────────────────────────────
-
-async function generateUploadToken(
-  hash: string,
-  key: string,
-  secret: string
-): Promise<string> {
-  const payload = {
-    hash,
-    key,
-    exp: Math.floor(Date.now() / 1000) + 600,
-  };
-  const enc = new TextEncoder();
-  const data = enc.encode(JSON.stringify(payload));
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const sig = await crypto.subtle.sign("HMAC", cryptoKey, data);
-  const sigB64 = btoa(String.fromCharCode(...new Uint8Array(sig)))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
-  const payloadB64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
-  return `${payloadB64}.${sigB64}`;
-}
-
-async function verifyUploadToken(
-  token: string,
-  secret: string
-): Promise<{ hash: string; key: string; exp: number }> {
-  const [payloadB64, sigB64] = token.split(".");
-  if (!payloadB64 || !sigB64) throw new Error("Invalid token");
-
-  const payloadStr = decodeURIComponent(
-    escape(atob(payloadB64.replace(/-/g, "+").replace(/_/g, "/")))
-  );
-  const payload = JSON.parse(payloadStr) as {
-    hash: string;
-    key: string;
-    exp: number;
-  };
-
-  if (payload.exp < Math.floor(Date.now() / 1000)) {
-    throw new Error("Token expired");
-  }
-
-  const enc = new TextEncoder();
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["verify"]
-  );
-
-  const sigBytes = Uint8Array.from(
-    atob(sigB64.replace(/-/g, "+").replace(/_/g, "/")),
-    (c) => c.charCodeAt(0)
-  );
-
-  const isValid = await crypto.subtle.verify(
-    "HMAC",
-    cryptoKey,
-    sigBytes,
-    enc.encode(JSON.stringify(payload))
-  );
-
-  if (!isValid) throw new Error("Invalid signature");
-  return payload;
-}
 
 export default upload;

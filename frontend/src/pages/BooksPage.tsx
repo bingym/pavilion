@@ -67,7 +67,7 @@ export default function BooksPage() {
       setBooks(res.data.list);
       setTotal(res.data.total);
     } catch {
-      message.error("获取书籍列表失败");
+      message.error("failed to get books list");
     } finally {
       setLoading(false);
     }
@@ -80,10 +80,10 @@ export default function BooksPage() {
   const handleDelete = async (id: number) => {
     try {
       await deleteBook(id);
-      message.success("删除成功");
+      message.success("delete success");
       void fetchBooks();
     } catch {
-      message.error("删除失败");
+      message.error("delete failed");
     }
   };
 
@@ -101,7 +101,7 @@ export default function BooksPage() {
 
   const columns = [
     {
-      title: "书名",
+      title: "Name",
       dataIndex: "name",
       key: "name",
       render: (name: string) => (
@@ -112,7 +112,7 @@ export default function BooksPage() {
       ),
     },
     {
-      title: "格式",
+      title: "Format",
       dataIndex: "file_type_label",
       key: "file_type_label",
       width: 80,
@@ -123,7 +123,7 @@ export default function BooksPage() {
       ),
     },
     {
-      title: "大小",
+      title: "Size",
       dataIndex: "file_size",
       key: "file_size",
       width: 100,
@@ -132,7 +132,7 @@ export default function BooksPage() {
       ),
     },
     {
-      title: "Hash",
+      title: "SHA256",
       dataIndex: "hash",
       key: "hash",
       width: 140,
@@ -145,7 +145,7 @@ export default function BooksPage() {
       ),
     },
     {
-      title: "上传时间",
+      title: "Upload Time",
       dataIndex: "created_at",
       key: "created_at",
       width: 160,
@@ -154,17 +154,17 @@ export default function BooksPage() {
       ),
     },
     {
-      title: "操作",
+      title: "Action",
       key: "action",
       width: 80,
       render: (_: unknown, record: Book) => (
         <Popconfirm
-          title="确认删除"
-          description={`将同时删除文件「${record.name}」，不可恢复。`}
+          title="confirm delete"
+          description={`will delete file "${record.name}" and cannot be recovered`}
           onConfirm={() => handleDelete(record.id)}
-          okText="确认删除"
+          okText="confirm delete"
           okButtonProps={{ danger: true }}
-          cancelText="取消"
+          cancelText="cancel"
         >
           <Button
             type="text"
@@ -203,7 +203,7 @@ export default function BooksPage() {
             background: "transparent",
           }}
         >
-          退出
+          Logout
         </Button>
       </Header>
 
@@ -214,7 +214,7 @@ export default function BooksPage() {
               style={{ borderRadius: 12}}
             >
               <Statistic
-                title="书籍总数"
+                title="Total Books"
                 value={total}
                 prefix={<BookOutlined />}
                 valueStyle={{ color: "#6366f1" }}
@@ -230,7 +230,7 @@ export default function BooksPage() {
           title={
             <Space>
               <BookOutlined />
-              <span>书籍列表</span>
+              <span>Books List</span>
             </Space>
           }
           extra={
@@ -240,7 +240,7 @@ export default function BooksPage() {
                 onClick={() => void fetchBooks()}
                 loading={loading}
               >
-                刷新
+                Refresh
               </Button>
               <Button
                 type="primary"
@@ -252,7 +252,7 @@ export default function BooksPage() {
                   border: "none",
                 }}
               >
-                上传电子书
+                Upload Book
               </Button>
             </Space>
           }
@@ -268,7 +268,7 @@ export default function BooksPage() {
               pageSize: pagination.pageSize,
               total,
               showSizeChanger: true,
-              showTotal: (t) => `共 ${t} 本`,
+              showTotal: (t) => `Total ${t} books`,
               pageSizeOptions: ["10", "20", "50", "100"],
             }}
           />

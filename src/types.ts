@@ -5,6 +5,11 @@ export interface Env {
   ADMIN_USER: string;
   ADMIN_PASSWORD: string;
   JWT_SECRET: string;
+  // R2 S3 API 凭证（用于生成预签名 URL）
+  R2_ACCOUNT_ID: string;
+  R2_ACCESS_KEY_ID: string;
+  R2_SECRET_ACCESS_KEY: string;
+  R2_BUCKET_NAME: string;
 }
 
 // 文件类型枚举（整型常量，不使用 TypeScript enum）

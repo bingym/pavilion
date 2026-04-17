@@ -4,7 +4,7 @@ import { Button, Card, Form, Input, Typography, message } from "antd";
 import { BookOutlined, LockOutlined, UserOutlined } from "@ant-design/icons";
 import { login, TOKEN_KEY } from "../api/client";
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 interface LoginForm {
   username: string;
@@ -20,10 +20,10 @@ export default function LoginPage() {
     try {
       const res = await login(values.username, values.password);
       localStorage.setItem(TOKEN_KEY, res.data.token);
-      message.success("登录成功");
+      message.success("login success");
       navigate("/", { replace: true });
     } catch {
-      message.error("用户名或密码错误");
+      message.error("username or password is incorrect");
     } finally {
       setLoading(false);
     }
@@ -51,7 +51,6 @@ export default function LoginPage() {
           <Title level={2} style={{ margin: "12px 0 4px", color: "#1e1b4b" }}>
             Pavilion
           </Title>
-          <Text type="secondary">电子书管理系统</Text>
         </div>
 
         <Form
@@ -63,16 +62,16 @@ export default function LoginPage() {
         >
           <Form.Item
             name="username"
-            rules={[{ required: true, message: "请输入用户名" }]}
+            rules={[{ required: true, message: "enter username" }]}
           >
-            <Input prefix={<UserOutlined />} placeholder="用户名" />
+            <Input prefix={<UserOutlined />} placeholder="username" />
           </Form.Item>
 
           <Form.Item
             name="password"
-            rules={[{ required: true, message: "请输入密码" }]}
+            rules={[{ required: true, message: "enter password" }]}
           >
-            <Input.Password prefix={<LockOutlined />} placeholder="密码" />
+            <Input.Password prefix={<LockOutlined />} placeholder="password" />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0 }}>
@@ -89,7 +88,7 @@ export default function LoginPage() {
                 fontWeight: 600,
               }}
             >
-              登录
+              Login
             </Button>
           </Form.Item>
         </Form>
