@@ -1,0 +1,4 @@
+# 复制此文件为 .dev.vars（已被 .gitignore 忽略）用于本地开发
+ADMIN_USER=admin
+ADMIN_PASSWORD=changeme
+JWT_SECRET=local-dev-secret-please-change-in-production

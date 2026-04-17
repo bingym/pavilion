@@ -1,0 +1,116 @@
+import axios from "axios";
+
+export const TOKEN_KEY = "pavilion_token";
+
+export const http = axios.create({
+  baseURL: "/api",
+  timeout: 30_000,
+});
+
+// 请求拦截器：自动附加 JWT
+http.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// 响应拦截器：401 自动跳转登录
+http.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem(TOKEN_KEY);
+      window.location.href = "/login";
+    }
+    return Promise.reject(err);
+  }
+);
+
+// ─── Auth ────────────────────────────────────────────
+export const login = (username: string, password: string) =>
+  http.post<{ token: string }>("/auth/login", { username, password });
+
+// ─── Books ───────────────────────────────────────────
+export interface Book {
+  id: number;
+  name: string;
+  hash: string;
+  file_size: number;
+  file_type: number;
+  file_type_label: string;
+  file_key: string;
+  created_at: number;
+}
+
+export interface BooksResponse {
+  list: Book[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export const getBooks = (page = 1, pageSize = 20) =>
+  http.get<BooksResponse>("/books", { params: { page, pageSize } });
+
+export const deleteBook = (id: number) =>
+  http.delete<{ success: boolean }>(`/books/${id}`);
+
+// ─── Upload ──────────────────────────────────────────
+export const checkFile = (hash: string) =>
+  http.post<{ exists: boolean; book?: Book }>("/upload/check", { hash });
+
+export interface PresignResponse {
+  key: string;
+  uploadUrl: string;
+  uploadToken: string;
+  method: string;
+}
+
+export const presignUpload = (hash: string, filename: string) =>
+  http.get<PresignResponse>("/upload/presign", { params: { hash, filename } });
+
+export const proxyUpload = (
+  uploadUrl: string,
+  uploadToken: string,
+  key: string,
+  file: File,
+  onProgress?: (percent: number) => void
+) =>
+  axios.put(uploadUrl, file, {
+    headers: {
+      "Content-Type": file.type || "application/octet-stream",
+      Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}`,
+      "X-Upload-Token": uploadToken,
+      "X-Upload-Key": key,
+    },
+    onUploadProgress: (e) => {
+      if (onProgress && e.total) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    },
+  });
+
+export const FILE_TYPE_MAP: Record<string, number> = {
+  epub: 1,
+  mobi: 2,
+  pdf: 3,
+};
+
+export const completeUpload = (payload: {
+  key: string;
+  hash: string;
+  name: string;
+  size: number;
+  type: number;
+}) => http.post<{ success: boolean; book: Book }>("/upload/complete", payload);
+
+// ─── Utilities ───────────────────────────────────────
+export async function computeSha256(file: File): Promise<string> {
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}

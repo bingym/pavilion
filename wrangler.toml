@@ -1,0 +1,27 @@
+name = "pavilion"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "./frontend/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pavilion-db"
+database_id = "TBD"
+migrations_dir = "migrations"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "pavilion-books"
+
+# 本地开发时设置变量，生产环境通过 wrangler secret put 设置
+[vars]
+ADMIN_USER = "admin"
+
+# Secrets (生产环境通过 CLI 设置):
+# wrangler secret put ADMIN_PASSWORD
+# wrangler secret put JWT_SECRET
