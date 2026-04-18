@@ -40,7 +40,7 @@ interface UploadModalProps {
   onSuccess: (book: Book) => void;
 }
 
-const STEPS = ["选择文件", "计算哈希", "检查重复", "上传文件", "保存记录"];
+const STEPS = ["Select File", "Calculate Hash", "Check Duplicate", "Upload File", "Save Record"];
 
 export default function UploadModal({
   open,
@@ -101,70 +101,70 @@ export default function UploadModal({
     const ext = selectedFile.name.split(".").pop()?.toLowerCase() ?? "";
     const fileType = FILE_TYPE_MAP[ext];
     if (!fileType) {
-      setErrorMsg(`不支持的文件格式：${ext}，仅支持 epub/mobi/pdf`);
+      setErrorMsg(`Unsupported file format: ${ext}, only supports epub/mobi/pdf`);
       setRunning(false);
       return;
     }
 
     try {
-      // Step 1 → 已完成（文件已选择）
+      // Step 1 → Completed (File selected)
       updateStep(0, "finish");
 
-      // Step 2: 计算 SHA-256
+      // Step 2: Calculate SHA-256
       setActiveStep(1);
-      updateStep(1, "process", "计算中...");
+      updateStep(1, "process", "Calculating...");
       const hash = await computeSha256(selectedFile);
       updateStep(1, "finish", hash.slice(0, 16) + "...");
 
       if (abortRef.current) return;
 
-      // Step 3: 检查是否已存在
+      // Step 3: Check if file already exists
       setActiveStep(2);
-      updateStep(2, "process", "查询中...");
+      updateStep(2, "process", "Checking...");
       const checkRes = await checkFile(hash);
       if (checkRes.data.exists) {
-        updateStep(2, "finish", "文件已存在，跳过上传");
+        updateStep(2, "finish", "File already exists, skipping upload");
         setActiveStep(4);
-        updateStep(3, "finish", "已跳过");
-        updateStep(4, "finish", "已存在");
+        updateStep(3, "finish", "Skipped");
+        updateStep(4, "finish", "Already exists");
         setResult(checkRes.data.book!);
         setRunning(false);
         return;
       }
-      updateStep(2, "finish", "文件不存在，继续上传");
+      updateStep(2, "finish", "File does not exist, skipping upload");
 
       if (abortRef.current) return;
 
-      // Step 4: 获取上传凭证并上传
+      // Step 4: Get upload credentials and upload
       setActiveStep(3);
-      updateStep(3, "process", "获取上传凭证...");
+      updateStep(3, "process", "Getting upload credentials...");
       const presignRes = await presignUpload(hash, selectedFile);
       const { uploadUrl, contentType } = presignRes.data;
 
-      updateStep(3, "process", "上传中...");
+      updateStep(3, "process", "Uploading...");
       setUploadProgress(0);
       await directUpload(uploadUrl, selectedFile, contentType, (p) => {
         setUploadProgress(p);
       });
-      updateStep(3, "finish", "上传完成");
+      updateStep(3, "finish", "Upload completed");
 
       if (abortRef.current) return;
 
-      // Step 5: 保存记录
+      // Step 5: Save record
       setActiveStep(4);
-      updateStep(4, "process", "保存记录...");
+      updateStep(4, "process", "Saving record...");
       const completeRes = await completeUpload({
         hash,
         filename: selectedFile.name,
       });
-      updateStep(4, "finish", "已保存");
+      updateStep(4, "finish", "Saved");
       setResult(completeRes.data.book);
     } catch (err: unknown) {
       const msg =
         err instanceof Error
           ? err.message
           : (err as { response?: { data?: { error?: string } } })?.response
-              ?.data?.error ?? "上传失败";
+              ?.data?.error ?? "Upload failed";
       setErrorMsg(msg);
       const failStep = currentStepRef.current;
       updateStep(failStep, "error", msg);
@@ -197,7 +197,7 @@ export default function UploadModal({
     <Modal
       open={open}
       onCancel={handleClose}
-      title="上传电子书"
+      title="Upload E-Book"
       footer={
         result ? (
           <Button
@@ -207,11 +207,11 @@ export default function UploadModal({
               handleClose();
             }}
           >
-            完成
+            Complete
           </Button>
         ) : (
           <Button onClick={handleClose} disabled={running}>
-            取消
+            Cancel
           </Button>
         )
       }
@@ -232,8 +232,8 @@ export default function UploadModal({
             <p className="ant-upload-drag-icon">
               <InboxOutlined />
             </p>
-            <p className="ant-upload-text">点击或拖拽文件到此区域上传</p>
-            <p className="ant-upload-hint">支持 epub、mobi、pdf 格式</p>
+            <p className="ant-upload-text">Click or drag files to this area to upload</p>
+            <p className="ant-upload-hint">Supports epub, mobi, pdf formats</p>
           </Dragger>
         )}
 
@@ -254,12 +254,12 @@ export default function UploadModal({
             {errorMsg && (
               <Alert
                 type="error"
-                message="上传失败"
+                message="Upload failed"
                 description={errorMsg}
                 showIcon
                 action={
                   <Button size="small" onClick={reset}>
-                    重试
+                    Retry
                   </Button>
                 }
               />
@@ -268,18 +268,18 @@ export default function UploadModal({
             {result && (
               <Alert
                 type="success"
-                message="上传成功"
+                message="Upload successful"
                 description={
                   <Space direction="vertical" size={2}>
                     <Text>
-                      书名：<strong>{result.name}</strong>
+                      Title: <strong>{result.name}</strong>
                     </Text>
                     <Text>
-                      格式：
+                      Format:
                       <Tag color="blue">{result.file_type_label}</Tag>
                     </Text>
                     <Text>
-                      大小：{(result.file_size / 1024 / 1024).toFixed(2)} MB
+                      Size: {(result.file_size / 1024 / 1024).toFixed(2)} MB
                     </Text>
                   </Space>
                 }

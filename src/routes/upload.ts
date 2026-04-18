@@ -1,8 +1,12 @@
 import { Hono } from "hono";
 import { AwsClient } from "aws4fetch";
 import { authMiddleware } from "../middleware/auth.ts";
-import { FileTypeExtMap, FileTypeLabel } from "../types.ts";
-import type { Env, FileTypeValue } from "../types.ts";
+import {
+  FileTypeExtMap,
+  FileTypeLabel,
+  type Env,
+  type FileTypeValue,
+} from "../types.ts";
 
 const upload = new Hono<{ Bindings: Env }>();
 
@@ -41,13 +45,27 @@ upload.post("/check", async (c) => {
   }
 
   const row = await c.env.DB.prepare(
-    "SELECT id, name, file_key FROM books WHERE hash = ?"
+    "SELECT id, name, hash, file_size, file_type, file_key, created_at FROM books WHERE hash = ?"
   )
     .bind(hash)
-    .first<{ id: number; name: string; file_key: string }>();
+    .first<{
+      id: number;
+      name: string;
+      hash: string;
+      file_size: number;
+      file_type: FileTypeValue;
+      file_key: string;
+      created_at: number;
+    }>();
 
   if (row) {
-    return c.json({ exists: true, book: row });
+    return c.json({
+      exists: true,
+      book: {
+        ...row,
+        file_type_label: FileTypeLabel[row.file_type] ?? "unknown",
+      },
+    });
   }
 
   return c.json({ exists: false });
@@ -175,6 +193,7 @@ upload.post("/complete", async (c) => {
       hash,
       file_size: object.size,
       file_type: type,
+      file_type_label: FileTypeLabel[type],
       file_key: key,
       created_at: now,
     },
