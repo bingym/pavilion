@@ -25,7 +25,7 @@ pavilion/
 │   └── routes/
 │       ├── auth.ts             # POST /api/auth/login
 │       ├── books.ts            # GET/DELETE /api/books
-│       └── upload.ts           # 上传流程（check/presign/proxy/complete）
+│       └── upload.ts           # 上传流程（check/presign/complete）
 ├── frontend/                   # React 前端
 │   └── src/
 │       ├── App.tsx             # 路由 + 认证守卫
@@ -176,9 +176,8 @@ Authorization: Bearer <token>
 | GET | `/api/books?page=1&pageSize=20` | 分页查询书籍列表 |
 | DELETE | `/api/books/:id` | 删除书籍（同步删除 R2 文件） |
 | POST | `/api/upload/check` | `{hash}` → 检查文件是否已存在 |
-| GET | `/api/upload/presign?hash=&filename=` | 获取上传凭证 |
-| PUT | `/api/upload/proxy` | 代理上传文件到 R2 |
-| POST | `/api/upload/complete` | `{key,hash,name,size,type}` → 验证并入库 |
+| POST | `/api/upload/presign` | `{hash,filename,size}` → 获取预签名直传 URL |
+| POST | `/api/upload/complete` | `{hash,filename}` → 验证 R2 对象并入库 |
 
 ## 上传流程
 
@@ -191,11 +190,11 @@ Authorization: Bearer <token>
   │                                │<─────────────────────────────────── │
   │<── {exists: false} ───────────-│                         │           │
   │                                │                         │           │
-  │── GET /upload/presign ────────>│ 生成签名 uploadToken    │           │
-  │<── {uploadUrl, uploadToken} ───│                         │           │
+  │── POST /upload/presign ───────>│ 生成预签名 PUT URL      │           │
+  │<── {uploadUrl, contentType} ───│                         │           │
   │                                │                         │           │
-  │── PUT /upload/proxy ──────────>│── R2.put(key, body) ──>│           │
-  │<── 200 OK ─────────────────────│<── OK ─────────────────│           │
+  │── PUT uploadUrl ────────────────────────────────────────>│           │
+  │<──────────────────────────────────────────────────────── │           │
   │                                │                         │           │
   │── POST /upload/complete ──────>│── R2.head(key) ────────>│           │
   │                                │── INSERT INTO books ───────────────>│

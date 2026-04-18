@@ -8,6 +8,12 @@ const upload = new Hono<{ Bindings: Env }>();
 
 upload.use("/*", authMiddleware);
 
+const FileContentTypeMap: Record<string, string> = {
+  epub: "application/epub+zip",
+  mobi: "application/x-mobipocket-ebook",
+  pdf: "application/pdf",
+};
+
 /**
  * 根据 hash 和原始文件名生成 R2 Key
  * 格式: files/{hash[0:2]}/{hash[2:4]}/{fullHash}.{ext}
@@ -15,6 +21,14 @@ upload.use("/*", authMiddleware);
 function buildKey(hash: string, filename: string): string {
   const ext = filename.split(".").pop()?.toLowerCase() ?? "bin";
   return `files/${hash.slice(0, 2)}/${hash.slice(2, 4)}/${hash}.${ext}`;
+}
+
+function getFileExt(filename: string): string {
+  return filename.split(".").pop()?.toLowerCase() ?? "";
+}
+
+function getBaseName(filename: string): string {
+  return filename.replace(/\.[^.]+$/, "");
 }
 
 /** POST /api/upload/check — 检查文件是否已存在 */
@@ -39,11 +53,14 @@ upload.post("/check", async (c) => {
   return c.json({ exists: false });
 });
 
-/** GET /api/upload/presign — 生成预签名上传 URL */
-upload.get("/presign", async (c) => {
-  const hash = c.req.query("hash");
-  const filename = c.req.query("filename");
-  const contentType = c.req.query("contentType") ?? "application/octet-stream";
+/** POST /api/upload/presign — 生成预签名上传 URL */
+upload.post("/presign", async (c) => {
+  const body = await c.req.json<{
+    hash: string;
+    filename: string;
+    size: number;
+  }>();
+  const { hash, filename, size } = body ?? {};
 
   if (!hash || !/^[0-9a-f]{64}$/i.test(hash)) {
     return c.json({ error: "Invalid hash" }, 400);
@@ -51,11 +68,15 @@ upload.get("/presign", async (c) => {
   if (!filename) {
     return c.json({ error: "filename is required" }, 400);
   }
+  if (!Number.isInteger(size) || size <= 0) {
+    return c.json({ error: "Invalid size" }, 400);
+  }
 
-  const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+  const ext = getFileExt(filename);
   if (!FileTypeExtMap[ext]) {
     return c.json({ error: `Unsupported file type: ${ext}` }, 400);
   }
+  const contentType = FileContentTypeMap[ext] ?? "application/octet-stream";
 
   const key = buildKey(hash, filename);
 
@@ -89,33 +110,43 @@ upload.get("/presign", async (c) => {
     uploadUrl: signedRequest.url.toString(),
     method: "PUT",
     contentType,
+    expiresInSeconds,
   });
 });
 
 /** POST /api/upload/complete — 验证 R2 文件并写入数据库 */
 upload.post("/complete", async (c) => {
   const body = await c.req.json<{
-    key: string;
     hash: string;
-    name: string;
-    size: number;
-    type: FileTypeValue;
+    filename: string;
   }>();
 
-  const { key, hash, name, size, type } = body ?? {};
+  const { hash, filename } = body ?? {};
 
-  if (!key || !hash || !name || !size || !type) {
+  if (!hash || !filename) {
     return c.json({ error: "Missing required fields" }, 400);
   }
+  if (!/^[0-9a-f]{64}$/i.test(hash)) {
+    return c.json({ error: "Invalid hash" }, 400);
+  }
 
-  if (!Object.values(FileTypeLabel).includes(FileTypeLabel[type])) {
+  const ext = getFileExt(filename);
+  const type = FileTypeExtMap[ext];
+  if (!type || !Object.values(FileTypeLabel).includes(FileTypeLabel[type])) {
     return c.json({ error: "Invalid file type" }, 400);
   }
+
+  const key = buildKey(hash, filename);
+  const name = getBaseName(filename);
+  const normalizedName = name.trim() || hash;
 
   // 验证 R2 中文件真实存在
   const object = await c.env.R2.head(key);
   if (!object) {
     return c.json({ error: "File not found in storage" }, 422);
+  }
+  if (object.size <= 0) {
+    return c.json({ error: "Uploaded file is empty" }, 422);
   }
 
   // 防止重复入库
@@ -133,16 +164,16 @@ upload.post("/complete", async (c) => {
   const result = await c.env.DB.prepare(
     "INSERT INTO books (name, hash, file_size, file_type, file_key, created_at) VALUES (?, ?, ?, ?, ?, ?)"
   )
-    .bind(name, hash, size, type, key, now)
+    .bind(normalizedName, hash, object.size, type, key, now)
     .run();
 
   return c.json({
     success: true,
     book: {
       id: result.meta.last_row_id,
-      name,
+      name: normalizedName,
       hash,
-      file_size: size,
+      file_size: object.size,
       file_type: type,
       file_key: key,
       created_at: now,

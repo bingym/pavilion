@@ -64,26 +64,30 @@ export const checkFile = (hash: string) =>
 export interface PresignResponse {
   key: string;
   uploadUrl: string;
-  uploadToken: string;
   method: string;
+  contentType: string;
+  expiresInSeconds: number;
 }
 
-export const presignUpload = (hash: string, filename: string) =>
-  http.get<PresignResponse>("/upload/presign", { params: { hash, filename } });
+export const presignUpload = (
+  hash: string,
+  file: Pick<File, "name" | "size">
+) =>
+  http.post<PresignResponse>("/upload/presign", {
+    hash,
+    filename: file.name,
+    size: file.size,
+  });
 
-export const proxyUpload = (
+export const directUpload = (
   uploadUrl: string,
-  uploadToken: string,
-  key: string,
   file: File,
+  contentType: string,
   onProgress?: (percent: number) => void
 ) =>
   axios.put(uploadUrl, file, {
     headers: {
-      "Content-Type": file.type || "application/octet-stream",
-      Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}`,
-      "X-Upload-Token": uploadToken,
-      "X-Upload-Key": key,
+      "Content-Type": contentType,
     },
     onUploadProgress: (e) => {
       if (onProgress && e.total) {
@@ -99,11 +103,8 @@ export const FILE_TYPE_MAP: Record<string, number> = {
 };
 
 export const completeUpload = (payload: {
-  key: string;
   hash: string;
-  name: string;
-  size: number;
-  type: number;
+  filename: string;
 }) => http.post<{ success: boolean; book: Book }>("/upload/complete", payload);
 
 // ─── Utilities ───────────────────────────────────────

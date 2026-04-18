@@ -18,7 +18,7 @@ import {
   computeSha256,
   checkFile,
   presignUpload,
-  proxyUpload,
+  directUpload,
   completeUpload,
   FILE_TYPE_MAP,
 } from "../api/client";
@@ -57,6 +57,7 @@ export default function UploadModal({
   const [result, setResult] = useState<Book | null>(null);
   const [running, setRunning] = useState(false);
   const abortRef = useRef(false);
+  const currentStepRef = useRef(0);
 
   const updateStep = (
     index: number,
@@ -70,9 +71,15 @@ export default function UploadModal({
     });
   };
 
+  const setActiveStep = (index: number) => {
+    currentStepRef.current = index;
+    setCurrentStep(index);
+  };
+
   const reset = () => {
     setFile(null);
     setCurrentStep(0);
+    currentStepRef.current = 0;
     setStepStates(STEPS.map(() => ({ status: "wait" })));
     setUploadProgress(0);
     setErrorMsg(null);
@@ -104,7 +111,7 @@ export default function UploadModal({
       updateStep(0, "finish");
 
       // Step 2: 计算 SHA-256
-      setCurrentStep(1);
+      setActiveStep(1);
       updateStep(1, "process", "计算中...");
       const hash = await computeSha256(selectedFile);
       updateStep(1, "finish", hash.slice(0, 16) + "...");
@@ -112,12 +119,12 @@ export default function UploadModal({
       if (abortRef.current) return;
 
       // Step 3: 检查是否已存在
-      setCurrentStep(2);
+      setActiveStep(2);
       updateStep(2, "process", "查询中...");
       const checkRes = await checkFile(hash);
       if (checkRes.data.exists) {
         updateStep(2, "finish", "文件已存在，跳过上传");
-        setCurrentStep(4);
+        setActiveStep(4);
         updateStep(3, "finish", "已跳过");
         updateStep(4, "finish", "已存在");
         setResult(checkRes.data.book!);
@@ -129,14 +136,14 @@ export default function UploadModal({
       if (abortRef.current) return;
 
       // Step 4: 获取上传凭证并上传
-      setCurrentStep(3);
+      setActiveStep(3);
       updateStep(3, "process", "获取上传凭证...");
-      const presignRes = await presignUpload(hash, selectedFile.name);
-      const { key, uploadUrl, uploadToken } = presignRes.data;
+      const presignRes = await presignUpload(hash, selectedFile);
+      const { uploadUrl, contentType } = presignRes.data;
 
       updateStep(3, "process", "上传中...");
       setUploadProgress(0);
-      await proxyUpload(uploadUrl, uploadToken, key, selectedFile, (p) => {
+      await directUpload(uploadUrl, selectedFile, contentType, (p) => {
         setUploadProgress(p);
       });
       updateStep(3, "finish", "上传完成");
@@ -144,14 +151,11 @@ export default function UploadModal({
       if (abortRef.current) return;
 
       // Step 5: 保存记录
-      setCurrentStep(4);
+      setActiveStep(4);
       updateStep(4, "process", "保存记录...");
       const completeRes = await completeUpload({
-        key,
         hash,
-        name: selectedFile.name.replace(/\.[^.]+$/, ""),
-        size: selectedFile.size,
-        type: fileType,
+        filename: selectedFile.name,
       });
       updateStep(4, "finish", "已保存");
       setResult(completeRes.data.book);
@@ -162,7 +166,7 @@ export default function UploadModal({
           : (err as { response?: { data?: { error?: string } } })?.response
               ?.data?.error ?? "上传失败";
       setErrorMsg(msg);
-      const failStep = currentStep;
+      const failStep = currentStepRef.current;
       updateStep(failStep, "error", msg);
     } finally {
       setRunning(false);
