@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node ./scripts/dev.mjs",
-    "dev:worker": "wrangler dev",
+    "dev:worker": "wrangler dev --env local",
     "dev:frontend": "cd frontend && npm run dev",
     "build:frontend": "cd frontend && npm install && npm run build",
     "deploy": "npm run build:frontend && wrangler deploy",

@@ -32,7 +32,7 @@ function run(cmd, args, opts = {}) {
 
 const children = [];
 
-const worker = run("npx", ["wrangler", "dev", "--ip", "127.0.0.1"], {
+const worker = run("npx", ["wrangler", "dev", "--env", "local", "--ip", "127.0.0.1"], {
   cwd: rootDir,
   env: {
     ...process.env,

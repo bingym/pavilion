@@ -7,6 +7,8 @@ import {
   type Env,
   type FileTypeValue,
 } from "../types.ts";
+import { requireR2SigningEnv } from "../utils/r2SigningEnv.ts";
+import { headR2ObjectViaS3 } from "../utils/r2S3Api.ts";
 
 const upload = new Hono<{ Bindings: Env }>();
 
@@ -98,6 +100,9 @@ upload.post("/presign", async (c) => {
 
   const key = buildKey(hash, filename);
 
+  const signingErr = requireR2SigningEnv(c);
+  if (signingErr) return signingErr;
+
   // 使用 aws4fetch 生成 R2 S3 API 预签名 URL
   // 浏览器可直接使用此 URL 上传文件，绕过 Worker 请求体大小限制
   const r2Client = new AwsClient({
@@ -158,8 +163,11 @@ upload.post("/complete", async (c) => {
   const name = getBaseName(filename);
   const normalizedName = name.trim() || hash;
 
-  // 验证 R2 中文件真实存在
-  const object = await c.env.R2.head(key);
+  const signingErr = requireR2SigningEnv(c);
+  if (signingErr) return signingErr;
+
+  // 必须用 S3 API HEAD：预签名 PUT 写入的是云端桶；wrangler dev 下 c.env.R2 为本地模拟桶，head 会误判不存在
+  const object = await headR2ObjectViaS3(c.env, key);
   if (!object) {
     return c.json({ error: "File not found in storage" }, 422);
   }

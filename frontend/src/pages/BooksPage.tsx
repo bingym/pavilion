@@ -14,6 +14,11 @@ import {
   Row,
   Col,
   Card,
+  Input,
+  Select,
+  Modal,
+  Form,
+  Spin,
 } from "antd";
 import type { TablePaginationConfig } from "antd";
 import BookOutlined from "@ant-design/icons/es/icons/BookOutlined";
@@ -21,12 +26,20 @@ import DeleteOutlined from "@ant-design/icons/es/icons/DeleteOutlined";
 import LogoutOutlined from "@ant-design/icons/es/icons/LogoutOutlined";
 import UploadOutlined from "@ant-design/icons/es/icons/UploadOutlined";
 import ReloadOutlined from "@ant-design/icons/es/icons/ReloadOutlined";
+import DownloadOutlined from "@ant-design/icons/es/icons/DownloadOutlined";
+import EditOutlined from "@ant-design/icons/es/icons/EditOutlined";
 import type { Book } from "../api/client";
-import { getBooks, deleteBook, TOKEN_KEY } from "../api/client";
+import {
+  getBooks,
+  deleteBook,
+  getBookDownloadPresign,
+  patchBookName,
+  TOKEN_KEY,
+} from "../api/client";
 import UploadModal from "../components/UploadModal";
 
 const { Header, Content } = Layout;
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 const FILE_TYPE_COLOR: Record<string, string> = {
   epub: "blue",
@@ -57,11 +70,28 @@ export default function BooksPage() {
   const [loading, setLoading] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20 });
+  const [fileTypeFilter, setFileTypeFilter] = useState<number | undefined>(
+    undefined
+  );
+  const [nameSearchInput, setNameSearchInput] = useState("");
+  const [nameSearchApplied, setNameSearchApplied] = useState("");
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renamingBook, setRenamingBook] = useState<Book | null>(null);
+  const [renameSubmitting, setRenameSubmitting] = useState(false);
+  const [form] = Form.useForm<{ name: string }>();
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const [downloadBook, setDownloadBook] = useState<Book | null>(null);
+  const [downloadUrl, setDownloadUrl] = useState("");
+  const [downloadFilename, setDownloadFilename] = useState("");
+  const [downloadLoading, setDownloadLoading] = useState(false);
 
   const fetchBooks = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getBooks(pagination.page, pagination.pageSize);
+      const res = await getBooks(pagination.page, pagination.pageSize, {
+        fileType: fileTypeFilter,
+        name: nameSearchApplied || undefined,
+      });
       setBooks(res.data.list);
       setTotal(res.data.total);
     } catch {
@@ -69,7 +99,7 @@ export default function BooksPage() {
     } finally {
       setLoading(false);
     }
-  }, [pagination]);
+  }, [pagination, fileTypeFilter, nameSearchApplied]);
 
   useEffect(() => {
     void fetchBooks();
@@ -90,6 +120,78 @@ export default function BooksPage() {
       page: pag.current ?? 1,
       pageSize: pag.pageSize ?? 20,
     });
+  };
+
+  const applyNameSearch = () => {
+    setNameSearchApplied(nameSearchInput.trim());
+    setPagination((p) => ({ ...p, page: 1 }));
+  };
+
+  const resetFilters = () => {
+    setFileTypeFilter(undefined);
+    setNameSearchInput("");
+    setNameSearchApplied("");
+    setPagination((p) => ({ ...p, page: 1 }));
+  };
+
+  const handleFileTypeChange = (value: number | undefined) => {
+    setFileTypeFilter(value);
+    setPagination((p) => ({ ...p, page: 1 }));
+  };
+
+  const openDownloadModal = async (record: Book) => {
+    setDownloadBook(record);
+    setDownloadUrl("");
+    setDownloadFilename("");
+    setDownloadOpen(true);
+    setDownloadLoading(true);
+    try {
+      const res = await getBookDownloadPresign(record.id);
+      setDownloadUrl(res.data.downloadUrl);
+      setDownloadFilename(res.data.filename);
+    } catch {
+      message.error("failed to get download link");
+      setDownloadOpen(false);
+      setDownloadBook(null);
+    } finally {
+      setDownloadLoading(false);
+    }
+  };
+
+  const closeDownloadModal = () => {
+    setDownloadOpen(false);
+    setDownloadBook(null);
+    setDownloadUrl("");
+    setDownloadFilename("");
+  };
+
+  const startBrowserDownload = () => {
+    if (!downloadUrl) return;
+    window.location.href = downloadUrl;
+  };
+
+  const openRename = (record: Book) => {
+    setRenamingBook(record);
+    form.setFieldsValue({ name: record.name });
+    setRenameOpen(true);
+  };
+
+  const submitRename = async () => {
+    if (!renamingBook) return;
+    try {
+      const v = await form.validateFields();
+      setRenameSubmitting(true);
+      await patchBookName(renamingBook.id, v.name.trim());
+      message.success("renamed");
+      setRenameOpen(false);
+      setRenamingBook(null);
+      void fetchBooks();
+    } catch (e) {
+      if (e && typeof e === "object" && "errorFields" in e) return;
+      message.error("rename failed");
+    } finally {
+      setRenameSubmitting(false);
+    }
   };
 
   const handleLogout = () => {
@@ -154,23 +256,41 @@ export default function BooksPage() {
     {
       title: "Action",
       key: "action",
-      width: 80,
+      width: 140,
       render: (_: unknown, record: Book) => (
-        <Popconfirm
-          title="confirm delete"
-          description={`will delete file "${record.name}" and cannot be recovered`}
-          onConfirm={() => handleDelete(record.id)}
-          okText="confirm delete"
-          okButtonProps={{ danger: true }}
-          cancelText="cancel"
-        >
-          <Button
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            size="small"
-          />
-        </Popconfirm>
+        <Space size="small">
+          <Tooltip title="Download Link">
+            <Button
+              type="text"
+              icon={<DownloadOutlined />}
+              size="small"
+              onClick={() => void openDownloadModal(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Rename">
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              size="small"
+              onClick={() => openRename(record)}
+            />
+          </Tooltip>
+          <Popconfirm
+            title="confirm delete"
+            description={`will delete file "${record.name}" and cannot be recovered`}
+            onConfirm={() => handleDelete(record.id)}
+            okText="confirm delete"
+            okButtonProps={{ danger: true }}
+            cancelText="cancel"
+          >
+            <Button
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+              size="small"
+            />
+          </Popconfirm>
+        </Space>
       ),
     },
   ];
@@ -255,6 +375,33 @@ export default function BooksPage() {
             </Space>
           }
         >
+          <Space
+            wrap
+            style={{ marginBottom: 16, width: "100%" }}
+            align="center"
+          >
+            <Select
+              placeholder="File type"
+              allowClear
+              style={{ width: 140 }}
+              value={fileTypeFilter}
+              onChange={handleFileTypeChange}
+              options={[
+                { value: 1, label: "EPUB" },
+                { value: 2, label: "MOBI" },
+                { value: 3, label: "PDF" },
+              ]}
+            />
+            <Input.Search
+              placeholder="Search by name (fuzzy)"
+              allowClear
+              style={{ maxWidth: 280 }}
+              value={nameSearchInput}
+              onChange={(e) => setNameSearchInput(e.target.value)}
+              onSearch={() => applyNameSearch()}
+            />
+            <Button onClick={resetFilters}>Reset filters</Button>
+          </Space>
           <Table
             rowKey="id"
             columns={columns}
@@ -281,6 +428,85 @@ export default function BooksPage() {
           void fetchBooks();
         }}
       />
+
+      <Modal
+        title="Download Link"
+        open={downloadOpen}
+        onCancel={closeDownloadModal}
+        footer={
+          <Button key="close" onClick={closeDownloadModal}>
+            Close
+          </Button>
+        }
+        width={640}
+        destroyOnHidden
+      >
+        {downloadLoading ? (
+          <div style={{ padding: "24px 0", textAlign: "center" }}>
+            <Spin tip="Generating link..." />
+          </div>
+        ) : (
+          <>
+            {downloadBook && (
+              <Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
+                {downloadBook.name}
+                {downloadFilename ? ` · Save as ${downloadFilename}` : ""}
+              </Text>
+            )}
+            <Paragraph
+              copyable={
+                downloadUrl
+                  ? {
+                      text: downloadUrl,
+                      tooltips: ["Copy link", "Copied"],
+                    }
+                  : false
+              }
+              style={{ marginBottom: 16, wordBreak: "break-all" }}
+            >
+              {downloadUrl || "—"}
+            </Paragraph>
+            <Space wrap>
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                disabled={!downloadUrl}
+                onClick={startBrowserDownload}
+              >
+                Download
+              </Button>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Link is valid for about 10 minutes; you can also copy the link above
+              </Text>
+            </Space>
+          </>
+        )}
+      </Modal>
+
+      <Modal
+        title="Rename"
+        open={renameOpen}
+        onCancel={() => {
+          setRenameOpen(false);
+          setRenamingBook(null);
+        }}
+        onOk={() => void submitRename()}
+        confirmLoading={renameSubmitting}
+        destroyOnHidden
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item
+            name="name"
+            label="Display name"
+            rules={[
+              { required: true, message: "Please enter a name" },
+              { max: 500, message: "Max 500 characters" },
+            ]}
+          >
+            <Input placeholder="File name without extension" />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Layout>
   );
 }

@@ -51,8 +51,39 @@ export interface BooksResponse {
   pageSize: number;
 }
 
-export const getBooks = (page = 1, pageSize = 20) =>
-  http.get<BooksResponse>("/books", { params: { page, pageSize } });
+export interface BooksQuery {
+  /** 1=epub, 2=mobi, 3=pdf */
+  fileType?: number;
+  /** 文件名模糊匹配（后端 LOWER(name) LIKE） */
+  name?: string;
+}
+
+export const getBooks = (
+  page = 1,
+  pageSize = 20,
+  query?: BooksQuery
+) =>
+  http.get<BooksResponse>("/books", {
+    params: {
+      page,
+      pageSize,
+      ...(query?.fileType != null ? { fileType: query.fileType } : {}),
+      ...(query?.name ? { name: query.name } : {}),
+    },
+  });
+
+export const patchBookName = (id: number, name: string) =>
+  http.patch<{ book: Book }>(`/books/${id}`, { name });
+
+export interface DownloadPresignResponse {
+  downloadUrl: string;
+  expiresInSeconds: number;
+  filename: string;
+}
+
+/** 获取 R2 预签名 GET，浏览器可 window.location.href = downloadUrl */
+export const getBookDownloadPresign = (id: number) =>
+  http.get<DownloadPresignResponse>(`/books/${id}/download`);
 
 export const deleteBook = (id: number) =>
   http.delete<{ success: boolean }>(`/books/${id}`);

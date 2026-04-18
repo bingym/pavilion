@@ -2,3 +2,13 @@
 ADMIN_USER=admin
 ADMIN_PASSWORD=changeme
 JWT_SECRET=local-dev-secret-please-change-in-production
+
+# R2 预签名上传/下载（S3 API Toke与 wrangler 里的 R2 bucket binding 不是同一套）
+# Cloudflare Dashboard → R2 → Manage R2 API Tokens → 创建（Object Read & Write）
+# 账户 ID：Dashboard 右侧 Overview 或 R2 页面 URL 中可见
+R2_ACCOUNT_ID=
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+
+# 不要在本文件设置 R2_BUCKET_NAME，除非你要覆盖 wrangler 的 [env.local]（开发桶 pavilion-books-dev）。
+# 若设置了 R2_BUCKET_NAME，须与本地 R2 binding 指向的桶一致，否则预签名 URL 与 R2.head 会对不上。
