@@ -89,6 +89,9 @@ export default function UploadModal({
   };
 
   const handleClose = () => {
+    if (result) {
+      onSuccess(result);
+    }
     reset();
     onClose();
   };
@@ -200,13 +203,7 @@ export default function UploadModal({
       title="Upload E-Book"
       footer={
         result ? (
-          <Button
-            type="primary"
-            onClick={() => {
-              onSuccess(result);
-              handleClose();
-            }}
-          >
+          <Button type="primary" onClick={handleClose}>
             Complete
           </Button>
         ) : (

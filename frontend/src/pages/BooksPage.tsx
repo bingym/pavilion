@@ -206,7 +206,6 @@ export default function BooksPage() {
       key: "name",
       render: (name: string) => (
         <Space>
-          <BookOutlined style={{ color: "#6366f1" }} />
           <Text strong>{name}</Text>
         </Space>
       ),
