@@ -78,17 +78,20 @@ books.get("/", async (c) => {
   });
 });
 
-/** GET /api/books/:id/download — 返回 R2 预签名 GET，浏览器直连下载 */
-books.get("/:id/download", async (c) => {
-  const id = Number(c.req.param("id"));
-  if (!Number.isInteger(id) || id <= 0) {
-    return c.json({ error: "Invalid id" }, 400);
+const BOOK_HASH_HEX_RE = /^[0-9a-f]{64}$/i;
+
+/** GET /api/books/:hash/download — 返回 R2 预签名 GET；:hash 为 64 位 hex（与 books.hash 一致） */
+books.get("/:hash/download", async (c) => {
+  const segment = c.req.param("hash");
+  if (!BOOK_HASH_HEX_RE.test(segment)) {
+    return c.json({ error: "Invalid hash" }, 400);
   }
+  const hash = segment.toLowerCase();
 
   const book = await c.env.DB.prepare(
-    "SELECT id, name, hash, file_size, file_type, file_key, created_at FROM books WHERE id = ?"
+    "SELECT id, name, hash, file_size, file_type, file_key, created_at FROM books WHERE hash = ?"
   )
-    .bind(id)
+    .bind(hash)
     .first<Book>();
 
   if (!book) {

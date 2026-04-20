@@ -144,7 +144,7 @@ export default function BooksPage() {
     setDownloadOpen(true);
     setDownloadLoading(true);
     try {
-      const res = await getBookDownloadPresign(record.id);
+      const res = await getBookDownloadPresign(record.hash);
       setDownloadUrl(res.data.downloadUrl);
       setDownloadFilename(res.data.filename);
     } catch {

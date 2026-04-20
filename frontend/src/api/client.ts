@@ -109,9 +109,9 @@ export interface DownloadPresignResponse {
   filename: string;
 }
 
-/** 获取 R2 预签名 GET，浏览器可 window.location.href = downloadUrl */
-export const getBookDownloadPresign = (id: number) =>
-  http.get<DownloadPresignResponse>(`/books/${id}/download`);
+/** 获取 R2 预签名 GET；hash 为 64 位 hex，浏览器可 window.location.href = downloadUrl */
+export const getBookDownloadPresign = (hash: string) =>
+  http.get<DownloadPresignResponse>(`/books/${hash}/download`);
 
 export const deleteBook = (id: number) =>
   http.delete<{ success: boolean }>(`/books/${id}`);
