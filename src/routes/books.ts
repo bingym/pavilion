@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { AwsClient } from "aws4fetch";
-import { authMiddleware } from "../middleware/auth.ts";
+import { jwtOrAppMiddleware } from "../middleware/jwtOrApp.ts";
 import { FileType, FileTypeLabel } from "../types.ts";
 import type { Env, Book, FileTypeValue } from "../types.ts";
 import { requireR2SigningEnv } from "../utils/r2SigningEnv.ts";
@@ -8,7 +8,7 @@ import { deleteR2ObjectViaS3 } from "../utils/r2S3Api.ts";
 
 const books = new Hono<{ Bindings: Env }>();
 
-books.use("/*", authMiddleware);
+books.use("/*", jwtOrAppMiddleware);
 
 const FILE_TYPES: FileTypeValue[] = [FileType.EPUB, FileType.MOBI, FileType.PDF];
 

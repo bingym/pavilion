@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { AwsClient } from "aws4fetch";
-import { authMiddleware } from "../middleware/auth.ts";
+import { jwtOrAppMiddleware } from "../middleware/jwtOrApp.ts";
 import {
   FileTypeExtMap,
   FileTypeLabel,
@@ -12,7 +12,7 @@ import { headR2ObjectViaS3 } from "../utils/r2S3Api.ts";
 
 const upload = new Hono<{ Bindings: Env }>();
 
-upload.use("/*", authMiddleware);
+upload.use("/*", jwtOrAppMiddleware);
 
 const FileContentTypeMap: Record<string, string> = {
   epub: "application/epub+zip",

@@ -1,7 +1,8 @@
 import type { JwtPayload } from "../types.ts";
 
-function base64urlEncode(data: ArrayBuffer): string {
-  return btoa(String.fromCharCode(...new Uint8Array(data)))
+function base64urlEncode(data: ArrayBuffer | Uint8Array): string {
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+  return btoa(String.fromCharCode(...bytes))
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=/g, "");

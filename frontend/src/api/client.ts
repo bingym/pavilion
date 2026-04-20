@@ -32,6 +32,34 @@ http.interceptors.response.use(
 export const login = (username: string, password: string) =>
   http.post<{ token: string }>("/auth/login", { username, password });
 
+// ─── Admin: 第三方 APP ───────────────────────────────
+export interface AdminApp {
+  id: number;
+  name: string;
+  created_at: number;
+  hasToken: boolean;
+}
+
+export const listAdminApps = () =>
+  http.get<{ list: AdminApp[] }>("/admin/apps");
+
+export const createAdminApp = (name: string) =>
+  http.post<{ app: { id: number; name: string; created_at: number } }>(
+    "/admin/apps",
+    { name }
+  );
+
+export const createAppToken = (appId: number) =>
+  http.post<{ token: string; appId: number; rotatedAt: number }>(
+    `/admin/apps/${appId}/token`
+  );
+
+export const deleteAppToken = (appId: number) =>
+  http.delete(`/admin/apps/${appId}/token`);
+
+export const deleteAdminApp = (appId: number) =>
+  http.delete(`/admin/apps/${appId}`);
+
 // ─── Books ───────────────────────────────────────────
 export interface Book {
   id: number;

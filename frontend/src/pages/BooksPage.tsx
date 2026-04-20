@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Button,
   Layout,
@@ -10,9 +10,6 @@ import {
   Popconfirm,
   message,
   Tooltip,
-  Statistic,
-  Row,
-  Col,
   Card,
   Input,
   Select,
@@ -28,6 +25,7 @@ import UploadOutlined from "@ant-design/icons/es/icons/UploadOutlined";
 import ReloadOutlined from "@ant-design/icons/es/icons/ReloadOutlined";
 import DownloadOutlined from "@ant-design/icons/es/icons/DownloadOutlined";
 import EditOutlined from "@ant-design/icons/es/icons/EditOutlined";
+import ApiOutlined from "@ant-design/icons/es/icons/ApiOutlined";
 import type { Book } from "../api/client";
 import {
   getBooks,
@@ -201,14 +199,15 @@ export default function BooksPage() {
 
   const columns = [
     {
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 100,
+    },
+    {
       title: "Name",
       dataIndex: "name",
       key: "name",
-      render: (name: string) => (
-        <Space>
-          <Text strong>{name}</Text>
-        </Space>
-      ),
     },
     {
       title: "Format",
@@ -311,35 +310,34 @@ export default function BooksPage() {
             Pavilion
           </Title>
         </Space>
-        <Button
-          icon={<LogoutOutlined />}
-          onClick={handleLogout}
-          style={{
-            color: "#fff",
-            borderColor: "rgba(255,255,255,0.5)",
-            background: "transparent",
-          }}
-        >
-          Logout
-        </Button>
+        <Space>
+          <Link to="/apps">
+            <Button
+              icon={<ApiOutlined />}
+              style={{
+                color: "#fff",
+                borderColor: "rgba(255,255,255,0.5)",
+                background: "transparent",
+              }}
+            >
+              APP 管理
+            </Button>
+          </Link>
+          <Button
+            icon={<LogoutOutlined />}
+            onClick={handleLogout}
+            style={{
+              color: "#fff",
+              borderColor: "rgba(255,255,255,0.5)",
+              background: "transparent",
+            }}
+          >
+            Logout
+          </Button>
+        </Space>
       </Header>
 
       <Content style={{ padding: "24px" }}>
-        <Row gutter={16} style={{ marginBottom: 24 }}>
-          <Col span={6}>
-            <Card
-              style={{ borderRadius: 12}}
-            >
-              <Statistic
-                title="Total Books"
-                value={total}
-                prefix={<BookOutlined />}
-                valueStyle={{ color: "#6366f1" }}
-              />
-            </Card>
-          </Col>
-        </Row>
-
         <Card
           style={{
             borderRadius: 12,

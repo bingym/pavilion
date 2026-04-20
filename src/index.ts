@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import auth from "./routes/auth.ts";
+import adminApps from "./routes/adminApps.ts";
 import books from "./routes/books.ts";
 import upload from "./routes/upload.ts";
 import type { Env } from "./types.ts";
@@ -17,6 +18,7 @@ app.use(
 );
 
 app.route("/api/auth", auth);
+app.route("/api/admin/apps", adminApps);
 app.route("/api/books", books);
 app.route("/api/upload", upload);
 

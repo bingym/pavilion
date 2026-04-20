@@ -4,6 +4,7 @@ import { TOKEN_KEY } from "./api/client";
 
 const LoginPage = React.lazy(() => import("./pages/LoginPage"));
 const BooksPage = React.lazy(() => import("./pages/BooksPage"));
+const AppsAdminPage = React.lazy(() => import("./pages/AppsAdminPage"));
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem(TOKEN_KEY);
@@ -21,6 +22,14 @@ export default function App() {
             element={
               <RequireAuth>
                 <BooksPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/apps"
+            element={
+              <RequireAuth>
+                <AppsAdminPage />
               </RequireAuth>
             }
           />
