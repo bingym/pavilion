@@ -1,36 +1,9 @@
 import axios from "axios";
 
-export const TOKEN_KEY = "pavilion_token";
-
 export const http = axios.create({
   baseURL: "/api",
   timeout: 30_000,
 });
-
-// 请求拦截器：自动附加 JWT
-http.interceptors.request.use((config) => {
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// 响应拦截器：401 自动跳转登录
-http.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
-      localStorage.removeItem(TOKEN_KEY);
-      window.location.href = "/login";
-    }
-    return Promise.reject(err);
-  }
-);
-
-// ─── Auth ────────────────────────────────────────────
-export const login = (username: string, password: string) =>
-  http.post<{ token: string }>("/auth/login", { username, password });
 
 // ─── Admin: 第三方 APP ───────────────────────────────
 export interface AdminApp {

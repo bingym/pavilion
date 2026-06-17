@@ -2,9 +2,6 @@ export interface Env {
   DB: D1Database;
   R2: R2Bucket;
   ASSETS: Fetcher;
-  ADMIN_USER: string;
-  ADMIN_PASSWORD: string;
-  JWT_SECRET: string;
   // R2 S3 API 凭证（用于生成预签名 URL）
   R2_ACCOUNT_ID: string;
   R2_ACCESS_KEY_ID: string;
@@ -43,9 +40,5 @@ export interface Book {
   created_at: number;
 }
 
-export interface JwtPayload {
-  sub: string;
-  iat: number;
-  exp: number;
-}
+
 

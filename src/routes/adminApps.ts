@@ -1,11 +1,8 @@
 import { Hono } from "hono";
-import { authMiddleware } from "../middleware/auth.ts";
 import type { Env } from "../types.ts";
 import { generateRawToken, hashToken } from "../utils/appToken.ts";
 
 const adminApps = new Hono<{ Bindings: Env }>();
-
-adminApps.use("/*", authMiddleware);
 
 const MAX_NAME_LEN = 200;
 

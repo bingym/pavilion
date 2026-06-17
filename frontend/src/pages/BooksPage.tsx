@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Button,
   Layout,
@@ -20,7 +20,6 @@ import {
 import type { TablePaginationConfig } from "antd";
 import BookOutlined from "@ant-design/icons/es/icons/BookOutlined";
 import DeleteOutlined from "@ant-design/icons/es/icons/DeleteOutlined";
-import LogoutOutlined from "@ant-design/icons/es/icons/LogoutOutlined";
 import UploadOutlined from "@ant-design/icons/es/icons/UploadOutlined";
 import ReloadOutlined from "@ant-design/icons/es/icons/ReloadOutlined";
 import DownloadOutlined from "@ant-design/icons/es/icons/DownloadOutlined";
@@ -32,7 +31,6 @@ import {
   deleteBook,
   getBookDownloadPresign,
   patchBookName,
-  TOKEN_KEY,
 } from "../api/client";
 import UploadModal from "../components/UploadModal";
 
@@ -62,7 +60,6 @@ function formatDate(unix: number) {
 }
 
 export default function BooksPage() {
-  const navigate = useNavigate();
   const [books, setBooks] = useState<Book[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -192,11 +189,6 @@ export default function BooksPage() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    navigate("/login", { replace: true });
-  };
-
   const columns = [
     {
       title: "ID",
@@ -323,17 +315,6 @@ export default function BooksPage() {
               APP 管理
             </Button>
           </Link>
-          <Button
-            icon={<LogoutOutlined />}
-            onClick={handleLogout}
-            style={{
-              color: "#fff",
-              borderColor: "rgba(255,255,255,0.5)",
-              background: "transparent",
-            }}
-          >
-            Logout
-          </Button>
         </Space>
       </Header>
 

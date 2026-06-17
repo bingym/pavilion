@@ -1,10 +1,8 @@
 import { createMiddleware } from "hono/factory";
-import { jwtVerify } from "../utils/jwt.ts";
 import { hashToken } from "../utils/appToken.ts";
-import type { Env, JwtPayload } from "../types.ts";
+import type { Env } from "../types.ts";
 
 type Variables = {
-  jwtPayload?: JwtPayload;
   appId?: number;
 };
 
@@ -18,15 +16,6 @@ export const jwtOrAppMiddleware = createMiddleware<{
   }
 
   const bearer = authorization.slice(7);
-
-  try {
-    const payload = await jwtVerify(bearer, c.env.JWT_SECRET);
-    c.set("jwtPayload", payload);
-    await next();
-    return;
-  } catch {
-    // 非 JWT 或 JWT 无效：按 APP Token 校验
-  }
 
   try {
     const tokenHash = await hashToken(bearer);

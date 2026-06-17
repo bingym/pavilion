@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
   Button,
   Card,
@@ -15,13 +15,11 @@ import {
 } from "antd";
 import BookOutlined from "@ant-design/icons/es/icons/BookOutlined";
 import ApiOutlined from "@ant-design/icons/es/icons/ApiOutlined";
-import LogoutOutlined from "@ant-design/icons/es/icons/LogoutOutlined";
 import PlusOutlined from "@ant-design/icons/es/icons/PlusOutlined";
 import KeyOutlined from "@ant-design/icons/es/icons/KeyOutlined";
 import DeleteOutlined from "@ant-design/icons/es/icons/DeleteOutlined";
 import type { AdminApp } from "../api/client";
 import {
-  TOKEN_KEY,
   createAdminApp,
   createAppToken,
   deleteAdminApp,
@@ -43,7 +41,6 @@ function formatDate(unix: number) {
 }
 
 export default function AppsAdminPage() {
-  const navigate = useNavigate();
   const [apps, setApps] = useState<AdminApp[]>([]);
   const [loading, setLoading] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -67,11 +64,6 @@ export default function AppsAdminPage() {
   useEffect(() => {
     void fetchApps();
   }, [fetchApps]);
-
-  const handleLogout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    navigate("/login", { replace: true });
-  };
 
   const submitCreate = async () => {
     try {
@@ -219,17 +211,7 @@ export default function AppsAdminPage() {
               Book Library
             </Button>
           </Link>
-          <Button
-            icon={<LogoutOutlined />}
-            onClick={handleLogout}
-            style={{
-              color: "#fff",
-              borderColor: "rgba(255,255,255,0.5)",
-              background: "transparent",
-            }}
-          >
-            Logout
-          </Button>
+
         </Space>
       </Header>
 
