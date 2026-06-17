@@ -12,8 +12,6 @@ import { headR2ObjectViaS3 } from "../utils/r2S3Api.ts";
 
 const upload = new Hono<{ Bindings: Env }>();
 
-upload.use("/*", jwtOrAppMiddleware);
-
 const FileContentTypeMap: Record<string, string> = {
   epub: "application/epub+zip",
   mobi: "application/x-mobipocket-ebook",

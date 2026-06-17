@@ -4,7 +4,7 @@ compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 [assets]
-directory = "./frontend/dist"
+directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 
@@ -18,34 +18,19 @@ migrations_dir = "migrations"
 binding = "R2"
 bucket_name = "pavilion-books"
 
-# 本地开发时设置变量，生产环境通过 wrangler secret put 设置
 [vars]
 R2_BUCKET_NAME = "pavilion-books"
 
-# Secrets (生产环境通过 CLI 设置):
-# wrangler secret put R2_ACCOUNT_ID        # Cloudflare 账户 ID
-# wrangler secret put R2_ACCESS_KEY_ID     # R2 API Token 的 Access Key ID
-# wrangler secret put R2_SECRET_ACCESS_KEY # R2 API Token 的 Secret Access Key
+# Secrets（本地开发在 .dev.vars 中设置，生产环境通过 wrangler secret put 设置）:
+# R2_ACCOUNT_ID        — Cloudflare 账户 ID
+# R2_ACCESS_KEY_ID     — R2 API Token 的 Access Key ID
+# R2_SECRET_ACCESS_KEY — R2 API Token 的 Secret Access Key
 #
 # 获取 R2 API Token:
 # 1. 登录 Cloudflare Dashboard
-# 2. 进入 R2 -> Manage R2 API Tokens
+# 2. 进入 R2 → Manage R2 API Tokens
 # 3. 创建 API Token，权限选择 "Object Read & Write"
 # 4. 记录 Access Key ID 和 Secret Access Key
-
-# ── 本地开发专用环境（默认「顶层」配置仍为生产桶名，勿改上面 bucket_name）──
-# Wrangler：启用 environment 时，vars / d1_databases 等不会继承顶层，须在 env.local 内重复声明。
-# 使用：npm run dev / npm run dev:worker（已带 --env local）
-# 勿执行 wrangler deploy --env local 部署到线上（除非你真的要单独 Worker）
-[[env.local.d1_databases]]
-binding = "DB"
-database_name = "pavilion-db"
-database_id = "df27a9e2-9071-4c4f-a060-05b223687f2f"
-migrations_dir = "migrations"
-
-[[env.local.r2_buckets]]
-binding = "R2"
-bucket_name = "pavilion-books-dev"
-
-[env.local.vars]
-R2_BUCKET_NAME = "pavilion-books-dev"
+#
+# 本地开发如需覆盖 vars（例如使用开发桶），在 .dev.vars 中设置:
+# R2_BUCKET_NAME=pavilion-books-dev

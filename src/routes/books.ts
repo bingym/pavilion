@@ -8,8 +8,6 @@ import { deleteR2ObjectViaS3 } from "../utils/r2S3Api.ts";
 
 const books = new Hono<{ Bindings: Env }>();
 
-books.use("/*", jwtOrAppMiddleware);
-
 const FILE_TYPES: FileTypeValue[] = [FileType.EPUB, FileType.MOBI, FileType.PDF];
 
 function safeDownloadFilename(name: string, ext: string): string {
