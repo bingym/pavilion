@@ -11,7 +11,6 @@
 | 数据库 | Cloudflare D1（SQLite） |
 | 对象存储 | Cloudflare R2 |
 | 前端 | Vite + React + Ant Design |
-| 认证 | JWT（HS256，Web Crypto API） |
 
 ## 项目结构
 
@@ -52,43 +51,25 @@ pavilion/
 ### 第一步：安装依赖
 
 ```bash
-npm install
-cd frontend && npm install && cd ..
+pnpm install
 ```
 
 ### 第二步：配置本地环境变量
 
 ```bash
 cp .dev.vars.example .dev.vars
-# 编辑 .dev.vars，设置 ADMIN_USER / ADMIN_PASSWORD / JWT_SECRET
 ```
 
 ### 第三步：初始化本地数据库
 
 ```bash
-npm run db:migrate:local
+pnpm run db:migrate:local
 ```
 
 ### 第四步：启动开发服务器
 
-**方案 A（推荐）**：前端走 Vite dev server，API 代理到 Worker
-
 ```bash
-# 终端 1：启动 Worker
-npm run dev:worker
-
-# 终端 2：启动前端（自动代理 /api → localhost:8787）
-npm run dev:frontend
-```
-
-前端访问地址：`http://localhost:5173`
-
-**方案 B**：先构建前端，再用 Worker 一体提供
-
-```bash
-npm run build:frontend
-npm run dev:worker
-# 访问 http://localhost:8787
+pnpm dev
 ```
 
 ## 部署到 Cloudflare
@@ -114,15 +95,6 @@ migrations_dir = "migrations"
 ```bash
 wrangler r2 bucket create pavilion-books
 ```
-
-### 第三步：设置 Secrets
-
-```bash
-wrangler secret put ADMIN_PASSWORD   # 输入管理员密码
-wrangler secret put JWT_SECRET       # 输入一个随机长字符串
-```
-
-> `ADMIN_USER` 已通过 `wrangler.toml` 的 `[vars]` 配置，默认为 `admin`，可按需修改。
 
 ### 第四步：执行数据库迁移
 
@@ -212,10 +184,3 @@ files/{hash前2位}/{hash第3-4位}/{完整hash}.{扩展名}
 
 以哈希前缀分子目录，避免 R2 单目录文件数过多影响性能。
 
-## 环境变量
-
-| 变量 | 存放位置 | 说明 |
-|---|---|---|
-| `ADMIN_USER` | `wrangler.toml [vars]` | 管理员用户名 |
-| `ADMIN_PASSWORD` | Workers Secret | 管理员密码 |
-| `JWT_SECRET` | Workers Secret | JWT 签名密钥（建议 32+ 字符随机串） |
